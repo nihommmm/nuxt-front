@@ -35,7 +35,7 @@
     <el-form-item label=" ">
       <!-- <button @clikc.prevent></button> -->
       <el-button type="primary" @click.native.prevent="handleLogin" >登录</el-button>
-      <nuxt-link to="/register">
+      <nuxt-link to="/BaseRegister">
       <el-button type="primary" >注册</el-button>
 
       </nuxt-link>
@@ -46,7 +46,7 @@
 </template>
 
 <script>
-// import md5 from 'md5'
+import md5 from 'md5'
 export default {
   layout:'BaseLogin',
   data(){
@@ -55,8 +55,8 @@ export default {
         timer:0
       },
       form:{
-        email:"316783812@qq.com",
-        passwd:"a316783812",
+        email:"985544900@qq.com",
+        passwd:"a985544900",
         captcha:""
       },
       rules:{
@@ -81,57 +81,54 @@ export default {
     }
   },
   computed:{
-    // sendText(){
-    //   if(this.send.timer<=0){
-    //     return '发送'
-    //   }
-    //   return `${this.send.timer}s后发送`
-    // }
+    sendText(){
+      if(this.send.timer<=0){
+        return '发送'
+      }
+      return `${this.send.timer}s后发送`
+    }
   },
   methods:{
-//     async sendEmailCode(){
-//       // @todo
-//       await this.$http.get('/sendcode?email='+this.form.email)
-//       this.send.timer = 10
-//       this.timer = setInterval(()=>{
-//         this.send.timer -= 1
-//         if(this.send.timer===0){
-//           clearInterval(this.timer)
-//         }
-//       },1000)
-//     },
+    async sendEmailCode(){
+      // @todo
+      await this.$http.get('/sendcode?email='+this.form.email)
+      this.send.timer = 10
+      this.timer = setInterval(()=>{
+        this.send.timer -= 1
+        if(this.send.timer===0){
+          clearInterval(this.timer)
+        }
+      },1000)
+    },
     resetCaptcha(){
       this.code.captcha = '/api/captcha?_t'+new Date().getTime()
     },
-//     handleLogin(){
-//       this.$refs.loginForm.validate( async valid=>{
-//         if(valid){
-//           // @todo 发送注册请求
-//           const obj = {
-//             email:this.form.email,
-//             passwd:md5(this.form.passwd),
-//             captcha:this.form.captcha,
-//             emailcode:this.form.emailcode
-//           }
-//           const ret = await this.$http.post('/user/login',obj)
-//           // code=0 就是成功
-//           console.log(ret)
-//           if(ret.code==0){
-//             // ttoken的存储 登录成功，返回token
-//             this.$message.success('登录成功')
-//             localStorage.setItem('KKB_USER_TOKEN',ret.data.token)
-//             setTimeout(()=>{
-//                 this.$router.push("/")
-//             },500)
+    handleLogin(){
+      this.$refs.loginForm.validate( async valid=>{
+        if(valid){
+          // @todo 发送注册请求
+          const obj = {
+            email:this.form.email,
+            passwd:md5(this.form.passwd),
+            captcha:this.form.captcha,
+            emailcode:this.form.emailcode
+          }
+          const ret = await this.$http.post('/user/login',obj)
+          // code=0 就是成功
+          if(ret.code===0){
+            // ttoken的存储 登录成功，返回token
+            this.$message.success('登录成功')
+            localStorage.setItem('KKB_USER_TOKEN',ret.data.token)
+            setTimeout(()=>{
+                this.$router.push("/")
+            },500)
 
-//           }else{
-//             this.$message.error(ret.message)
-//           }
-//         }else{
-//           console.log('校验失败')
-//         }
-//       })
-//     }
+          }else{
+            this.$message.error(ret.message)
+          }
+        }
+      })
+    }
   }
 }
 </script>
