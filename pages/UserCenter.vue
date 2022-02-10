@@ -23,12 +23,12 @@
       progress<0 报错 显示红色
       == 100 成功
       别的数字 方块高度显示 -->
-      <!-- 尽可能让方块看起来仕真方形
+      <!-- 尽可能让方块看起来是正方形
       比如10各方块 4*4
       9 3*3
       100 10*10 -->
 
-      <!-- <div class="cube-container" :style="{width:cubeWidth+'px'}">
+      <div class="cube-container" :style="{width:cubeWidth+'px'}"> 
         <div v-for="chunk in chunks" :key="chunk.name" class="cube">
           <div
             :class="{
@@ -41,7 +41,7 @@
             <i v-if="chunk.progress<100 && chunk.progress>0" class="el-icon-loading" style="color:#f56c6c"></i>
           </div>
         </div>
-      </div> -->
+      </div> 
     </div>
   </div>
 </template>
@@ -52,7 +52,7 @@ export default {
   data(){
     return {
       file:null,
-      uploadProgress:0,
+      // uploadProgress:0,
       hashProgress:0,
       chunks:[]
     }
@@ -61,14 +61,14 @@ export default {
     cubeWidth(){
       return  Math.ceil(Math.sqrt(this.chunks.length))*16
     },
-    // uploadProgress(){
-    //   if(!this.file || this.chunks.length){
-    //     return 0
-    //   }
-    //   const loaded = this.chunks.map(item=>item.chunk.size*item.progress)
-    //                     .reduce((acc,cur)=>acc+cur,0)
-    //   return parseInt(((loaded*100)/this.file.size).toFixed(2))
-    // }
+    uploadProgress(){    // 有很多切片所以需要将值设置为计算属性
+      if(!this.file || this.chunks.length){
+        return 0
+      }
+      const loaded = this.chunks.map(item=>item.chunk.size*item.progress)
+                        .reduce((acc,cur)=>acc+cur,0)
+      return parseInt(((loaded*100)/this.file.size).toFixed(2))
+    }
   },
   mounted(){
     // const ret = await this.$http.get('/user/info')
@@ -269,17 +269,14 @@ export default {
     //   }
 
 
-
       
-      this.chunks = this.createFileChunk(this.file)   // 文件切片
-      const hash = await this.calculateHashWorker()   // 使用webworker计算hash
-      const hash1 = await this.calculateHashIdle()
-      console.log('文件hash',hash)
-      console.log('文件hash1',hash1)
-      const hash2 = await this.calculateHashSample()
-
-      console.log('文件hash2',hash2)
-    //   this.hash = hash
+      const chunks = this.createFileChunk(this.file)   // 文件切片
+      // const hash = await this.calculateHashWorker()   // 使用webworker计算hash
+      // const hash1 = await this.calculateHashIdle()
+      // console.log('文件hash',hash)
+      // console.log('文件hash1',hash1)
+      const hash = await this.calculateHashSample()
+      this.hash = hash
 
     //   // 问一下后端，文件是否上传过，如果没有，是否有存在的切片
     //   const {data:{uploaded, uploadedList}} = await this.$http.post('/checkfile',{
@@ -294,59 +291,62 @@ export default {
     //   // 两个hash配合
       // 抽样hash 不算全量
       // 布隆过滤器 损失一小部分的精度，换取效率
-      
-    //   this.chunks = chunks.map((chunk,index)=>{
-    //     // 切片的名字 hash+index
-    //     const name = hash +'-'+ index
-    //     return {
-    //       hash,
-    //       name,
-    //       index,
-    //       chunk:chunk.file,
-    //       // 设置进度条，已经上传的，设为100
-    //       progress:uploadedList.includes(name) ?100:0
-    //     }
-    //   })
-    //   await this.uploadChunks(uploadedList)
+    
+    // 当前的chunks只是一个单纯的一个文件的切片，需要将能够使用的数据变成一个结构化的数据可以直接给后端
+      this.chunks = chunks.map((chunk,index)=>{
+        // 切片的名字 hash+index
+        const name = hash +'-'+ index
+        return {
+          hash,  // 当前文件的hash值
+          name, // 当前切片的名字
+          index, // 当前的索引值
+          chunk:chunk.file, // 文件
+          // 设置进度条，已经上传的，设为100
+          // progress:uploadedList.includes(name) ?100:0
+          progress:0
+        }
+      })
+      // await this.uploadChunks(uploadedList)
+      await this.uploadChunks()
 
     },
-//     async uploadChunks(uploadedList=[]){
-//       const requests = this.chunks
-//         .filter(chunk=>!uploadedList.includes(chunk.name))
-//         .map((chunk,index)=>{
-//           // 转成promise
-//           const form = new FormData()
-//           form.append('chunk',chunk.chunk)
-//           form.append('hash',chunk.hash)
-//           form.append('name',chunk.name)
-//           // form.append('index',chunk.index)
-//           return {form, index:chunk.index,error:0}
-//         })
-//         .map(({form,index})=> this.$http.post('/uploadfile',form,{
-//           onUploadProgress:progress=>{
-//             // 不是整体的进度条了，而是每个区块有自己的进度条，整体的进度条需要计算
-//             this.chunks[index].progress = Number(((progress.loaded/progress.total)*100).toFixed(2))
-//           }
-//         }))
-//       // @todo 并发量控制 
-//       // 尝试申请tcp链接过多，也会造成卡顿
-//       // 异步的并阿叔控制，
-//       // await Promise.all(requests)
+    async uploadChunks(uploadedList=[]){
+      const requests = this.chunks
+        .filter(chunk=>!uploadedList.includes(chunk.name))
+        .map((chunk,index)=>{
+          // 转成promise
+          const form = new FormData()
+          form.append('chunk',chunk.chunk)
+          form.append('hash',chunk.hash)
+          form.append('name',chunk.name)
+          // form.append('index',chunk.index)
+          return {form, index:chunk.index,error:0}
+        })
+        .map(({form,index})=> this.$http.post('/uploadfile',form,{
+          onUploadProgress:progress=>{
+            // 不是整体的进度条了，而是每个区块有自己的进度条，整体的进度条需要计算
+            this.chunks[index].progress = Number(((progress.loaded/progress.total)*100).toFixed(2))
+          }
+        }))
+      // @todo 并发量控制 
+      // 尝试申请tcp链接过多，也会造成卡顿
+      // 异步的并发数控制，
+      // await Promise.all(requests)
 
-//       // await this.sendRequest(requests)
-//       await Promise.all(requests)
-//       await this.mergeRequest()
-//       // const form = new FormData()
-//       // form.append('name','file')
-//       // form.append('file',this.file)
-//       // const ret = await this.$http.post('/uploadfile',form,{
-//       //   onUploadProgress:progress=>{
-//       //     this.uploadProgress = Number(((progress.loaded/progress.total)*100).toFixed(2))
-//       //   }
-//       // })
-//       // console.log(ret)
+      // await this.sendRequest(requests)
+      await Promise.all(requests)
+      await this.mergeRequest()
+      // const form = new FormData()
+      // form.append('name','file')
+      // form.append('file',this.file)
+      // const ret = await this.$http.post('/uploadfile',form,{
+      //   onUploadProgress:progress=>{
+      //     this.uploadProgress = Number(((progress.loaded/progress.total)*100).toFixed(2))
+      //   }
+      // })
+      // console.log(ret)
 
-//     },
+    },
 //     // TCP慢启动，先上传一个初始区块，比如10KB，根据上传成功时间，决定下一个区块仕20K，hi是50K，还是5K
 //     // 在下一个一样的逻辑，可能编程100K，200K，或者2K
 //     // 上传可能报错
@@ -410,17 +410,16 @@ export default {
       
 //       })
 //     },
-//     async mergeRequest(){
-//       const ret = await this.$http.post('/mergefile',{
-//         ext:this.file.name.split('.').pop(),
-//         size:CHUNK_SIZE,
-//         hash:this.hash
-//       })
-//       const url = ret.data.url
-//       await this.$http.put('/user/info',{url:"/api"+url})
-//     },
+    async mergeRequest(){
+      await this.$http.post('/mergefile',{
+        ext:this.file.name.split('.').pop(),
+        size:CHUNK_SIZE,
+        hash:this.hash
+      })
+      // const url = ret.data.url
+      // await this.$http.put('/user/info',{url:"/api"+url})
+    },
     handleFileChange(e){
-        console.log('aaaaa')
       const [file] = e.target.files
       if(!file) return 
       this.file = file
