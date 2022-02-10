@@ -96,47 +96,47 @@ export default {
         // const e.dataTrans
       })
     }, 
-//     async blobToString(blob){
-//       return new Promise(resolve=>{
-//         const reader = new FileReader()
-//         reader.onload = function(){
-//           console.log(reader.result)
-//           const ret = reader.result.split('')
-//                         .map(v=>v.charCodeAt())
-//                         .map(v=>v.toString(16).toUpperCase())
-//                         // .map(v=>v.padStart(2,'0'))
-//                         .join('')
-//           resolve(ret)
-//           // const ret = reader.
-//         }
-//         reader.readAsBinaryString(blob)
-//       })
-//     } ,
-//     async isGif(file){
-//       // GIF89a 和GIF87a
-//       // 前面6个16进制，'47 49 46 38 39 61' '47 49 46 38 37 61'
-//       // 16进制的抓安环
-//       const ret = await this.blobToString(file.slice(0,6))
-//       const isGif = (ret=='47 49 46 38 39 61') || (ret=='47 49 46 38 37 61')
-//       return isGif
-//     },
-//     async isPng(file){
-//       const ret = await this.blobToString(file.slice(0,8))
-//       const ispng = (ret == "89 50 4E 47 0D 0A 1A 0A")
-//       return ispng
-//     },
-//     async isJpg(file){
-//       const len = file.size
-//       const start = await this.blobToString(file.slice(0,2))
-//       const tail = await this.blobToString(file.slice(-2,len))
-//       const isjpg = (start=='FF D8') && (tail=='FF D9')
-//       return isjpg
-//     },
-//     async isImage(file){
-//       // 通过文件流来判定
-//       // 先判定是不是gif
-//       return await this.isGif(file) || await this.isPng(file)
-//     },
+    // 辅助函数
+    blobToString(blob){
+      return new Promise(resolve=>{
+        const reader = new FileReader()
+        reader.onload = function(){
+          const ret = reader.result.split('')
+                        .map(v=>v.charCodeAt())
+                        .map(v=>v.toString(16).toUpperCase())
+                        // .map(v=>v.padStart(2,'0'))
+                        .join('')
+          resolve(ret)
+          // const ret = reader.
+        }
+        reader.readAsBinaryString(blob) // 读取文件
+      })
+    } ,
+    async isGif(file){
+      // GIF89a 和GIF87a
+      // 前面6个16进制，'47 49 46 38 39 61' '47 49 46 38 37 61'
+      // 16进制的转换
+      const ret = await this.blobToString(file.slice(0,6))
+      const isGif = (ret==='47 49 46 38 39 61') || (ret==='47 49 46 38 37 61')
+      return isGif
+    },
+    async isPng(file){
+      const ret = await this.blobToString(file.slice(0,8))
+      const ispng = (ret === "89 50 4E 47 0D 0A 1A 0A")
+      return ispng
+    },
+    async isJpg(file){
+      const len = file.size
+      const start = await this.blobToString(file.slice(0,2))
+      const tail = await this.blobToString(file.slice(-2,len))
+      const isjpg = (start==='FF D8') && (tail==='FF D9')
+      return isjpg
+    },
+    async isImage(file){
+      // 通过文件流来判定
+      // 先判定是不是gif （异步操作）
+      return await this.isGif(file) || await this.isPng(file)
+    },
 //     createFileChunk(file,size=CHUNK_SIZE){
 //       const chunks = [] 
 //       let cur = 0
@@ -244,7 +244,12 @@ export default {
 //       })
 //     },
     async uploadFile(){
-
+    // 校验文件格式
+      if(!await this.isImage(this.file)){
+        console.log('文件格式不对')
+      }else{
+        console.log('格式正确')
+      }
     // 图片上传1.0
     // 不考虑断点续传以及文件类型校验的情况,只需要简单的post过去
     // 由于是二进制的数据需要放在form表单里面
@@ -263,12 +268,7 @@ export default {
 
 
 
-    //   // console.log(this.file)
-    //   // if(!await this.isImage(this.file)){
-    //   //   console.log('文件格式不对')
-    //   // }else{
-    //   //   console.log('格式正确')
-    //   // }
+      
     //   const chunks = this.createFileChunk(this.file)
     //   // const hash = await this.calculateHashWorker()
     //   // const hash1 = await this.calculateHashIdle()
