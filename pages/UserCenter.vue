@@ -6,9 +6,9 @@
       <input type="file" name="file" @change="handleFileChange">
     </div>
 
-   <!--  <div>
+    <div>
       <el-progress :stroke-width='20' :text-inside="true" :percentage="uploadProgress" ></el-progress>
-    </div>-->
+    </div>
     <div>
       <el-button @click="uploadFile">上传</el-button>
     </div>
@@ -52,7 +52,7 @@ export default {
   data(){
     return {
       file:null,
-      // uploadProgress:0,
+      uploadProgress:0,
       hashProgress:0,
       chunks:[]
     }
@@ -61,42 +61,41 @@ export default {
     cubeWidth(){
       return  Math.ceil(Math.sqrt(this.chunks.length))*16
     },
-    uploadProgress(){
-      if(!this.file || this.chunks.length){
-        return 0
-      }
-      const loaded = this.chunks.map(item=>item.chunk.size*item.progress)
-                        .reduce((acc,cur)=>acc+cur,0)
-      return parseInt(((loaded*100)/this.file.size).toFixed(2))
-    }
+    // uploadProgress(){
+    //   if(!this.file || this.chunks.length){
+    //     return 0
+    //   }
+    //   const loaded = this.chunks.map(item=>item.chunk.size*item.progress)
+    //                     .reduce((acc,cur)=>acc+cur,0)
+    //   return parseInt(((loaded*100)/this.file.size).toFixed(2))
+    // }
   },
-  async mounted(){
-    const ret = await this.$http.get('/user/info')
-    console.log(ret,"aaa")
-    // this.bindEvents()
+  mounted(){
+    // const ret = await this.$http.get('/user/info')
+    this.bindEvents()
   },
   methods:{
-//     bindEvents(){
-//       const drag = this.$refs.drag
-//       drag.addEventListener('dragover',e=>{
-//         drag.style.borderColor = 'red'
-//         e.preventDefault()
-//       })
-//       drag.addEventListener('dragleave',e=>{
-//         drag.style.borderColor = '#eee'
-//         e.preventDefault()
-//       })
-//       drag.addEventListener('drop',e=>{
-//         const fileList = e.dataTransfer.files
-//         drag.style.borderColor = '#eee'
-//         this.file = fileList[0]
+    bindEvents(){
+      const drag = this.$refs.drag
+      drag.addEventListener('dragover',e=>{
+        drag.style.borderColor = 'red'
+        e.preventDefault()
+      })
+      drag.addEventListener('dragleave',e=>{
+        drag.style.borderColor = '#eee'
+        e.preventDefault()
+      })
+      drag.addEventListener('drop',e=>{
+        const fileList = e.dataTransfer.files  // dataTransfer对象用于保存拖动并放下（drag and drop）过程中的数据
+        drag.style.borderColor = '#eee'
+        this.file = fileList[0]
 
 
-//         e.preventDefault()
+        e.preventDefault() // 一定要阻止默认事件，否则文件就在浏览器打开了
 
-//         // const e.dataTrans
-//       })
-//     }, 
+        // const e.dataTrans
+      })
+    }, 
 //     async blobToString(blob){
 //       return new Promise(resolve=>{
 //         const reader = new FileReader()
@@ -252,7 +251,11 @@ export default {
         const form = new FormData()
         form.append('name','file')
         form.append('file',this.file)
-        const ret = await this.$http.post('/uploadfile',form)
+        const ret = await this.$http.post('/uploadfile',form,{
+            onUploadProgress:progress=>{
+                this.uploadProgress = Number(((progress.loaded/progress.total)*100).toFixed(2))
+            }
+        })
         console.log(ret)
     //   if(!this.file){
     //     return 
