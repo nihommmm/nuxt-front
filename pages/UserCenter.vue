@@ -141,8 +141,8 @@ export default {
     createFileChunk(file,size=CHUNK_SIZE){
       const chunks = [] 
       let cur = 0
-      while(cur<this.file.size){
-        chunks.push({index:cur, file:this.file.slice(cur,cur+size)})
+      while(cur<file.size){
+        chunks.push({index:cur, file:file.slice(cur,cur+size)})
         cur+=size
       }
       return chunks
@@ -204,47 +204,47 @@ export default {
 
       })
     },
-//     async calculateHashSample(){
+    calculateHashSample(){
 
-//       // 布隆过滤器  判断一个数据存在与否
-//       // 1个G的文件，抽样后5M以内
-//       // hash一样，文件不一定一样
-//       // hash不一样，文件一定不一样
-//       return new Promise(resolve=>{
-//         const spark = new sparkMD5.ArrayBuffer()
-//         const reader = new FileReader()
+      // 布隆过滤器  判断一个数据存在与否
+      // 1个G的文件，抽样后5M以内
+      // hash一样，文件不一定一样
+      // hash不一样，文件一定不一样
+      return new Promise(resolve=>{
+        const spark = new sparkMD5.ArrayBuffer()
+        const reader = new FileReader()
 
-//         const file = this.file
-//         const size = file.size
-//         const offset = 2*1024*1024
-//         // 第一个2M，最后一个区块数据全要
-//         const chunks = [file.slice(0,offset)]
+        const file = this.file
+        const size = file.size
+        const offset = 2*1024*1024  // 每2M切一块，直接读取
+        // 第一个2M，最后一个区块数据全要
+        const chunks = [file.slice(0,offset)] // 第一个区块当初始值
 
-//         let cur = offset
-//         while(cur<size){
-//           if(cur+offset>=size){
-//             // 最后一个区快
-//             chunks.push(file.slice(cur, cur+offset))
+        let cur = offset
+        while(cur<size){
+          if(cur+offset>=size){
+            // 最后一个区快
+            chunks.push(file.slice(cur, cur+offset))
 
-//           }else{
-//             // 中间的区块
-//             const mid = cur+offset/2
-//             const end = cur+offset
-//             chunks.push(file.slice(cur, cur+2))
-//             chunks.push(file.slice(mid, mid+2))
-//             chunks.push(file.slice(end-2, end))
-//           }
-//           cur+=offset
-//         }
-//         // 中间的，取前中后各2各字节
-//         reader.readAsArrayBuffer(new Blob(chunks))
-//         reader.onload = e=>{
-//           spark.append(e.target.result)
-//           this.hashProgress = 100
-//           resolve(spark.end())
-//         }
-//       })
-//     },
+          }else{
+            // 中间的区块
+            const mid = cur+offset/2
+            const end = cur+offset
+            chunks.push(file.slice(cur, cur+2)) // 第一个首字节 起点
+            chunks.push(file.slice(mid, mid+2)) // 中间
+            chunks.push(file.slice(end-2, end)) // 总店
+          }
+          cur+=offset
+        }
+        // 中间的，取前中后各2各字节
+        reader.readAsArrayBuffer(new Blob(chunks))
+        reader.onload = e=>{
+          spark.append(e.target.result)
+          this.hashProgress = 100
+          resolve(spark.end())
+        }
+      })
+    },
     async uploadFile(){
     // 校验文件格式
       // if(!await this.isImage(this.file)){
@@ -276,7 +276,9 @@ export default {
       const hash1 = await this.calculateHashIdle()
       console.log('文件hash',hash)
       console.log('文件hash1',hash1)
-    //   const hash = await this.calculateHashSample()
+      const hash2 = await this.calculateHashSample()
+
+      console.log('文件hash2',hash2)
     //   this.hash = hash
 
     //   // 问一下后端，文件是否上传过，如果没有，是否有存在的切片
@@ -290,8 +292,8 @@ export default {
     //   }
     //   // console.log('文件hash2',hash2)
     //   // 两个hash配合
-    //   // 抽样hash 不算全量
-    //   // 布隆过滤器 损失一小部分的精度，换取效率
+      // 抽样hash 不算全量
+      // 布隆过滤器 损失一小部分的精度，换取效率
       
     //   this.chunks = chunks.map((chunk,index)=>{
     //     // 切片的名字 hash+index
