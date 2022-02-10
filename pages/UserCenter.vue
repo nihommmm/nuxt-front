@@ -46,8 +46,8 @@
   </div>
 </template>
 <script>
-// import sparkMD5 from 'spark-md5'
-const CHUNK_SIZE = 10*1024*1024
+import sparkMD5 from 'spark-md5'
+const CHUNK_SIZE = 0.1*1024*1024
 export default {
   data(){
     return {
@@ -161,48 +161,49 @@ export default {
       })
     },
 
-//     // 60fps
-//     // 1秒渲染60次 渲染1次 1帧，大概16.6ms
-//     // |帧(system task，render，script)空闲时间  |帧 painting idle   |帧   |帧   |
-//     // 借鉴fiber架构
-//     async calculateHashIdle(){
-//       const chunks = this.chunks
-//       return new Promise(resolve=>{
-//         const spark = new sparkMD5.ArrayBuffer()
-//         let count = 0 
+    // 60fps
+    // 1秒渲染60次 渲染1次 1帧，大概16.6ms
+    // |帧(system task，render，script)空闲时间  |帧 painting idle   |帧   |帧   |
+    // 借鉴fiber架构
+    calculateHashIdle(){
+      const chunks = this.chunks
+      return new Promise(resolve=>{
+        const spark = new sparkMD5.ArrayBuffer()
+        let count = 0 
 
-//         const appendToSpark = async file=>{
-//           return new Promise(resolve=>{
-//             const reader = new FileReader()
-//             reader.readAsArrayBuffer(file)
-//             reader.onload = e=>{
-//               spark.append(e.target.result)
-//               resolve()
-//             }
-//           })
-//         }
-//         const workLoop = async deadline=>{
-//           // timeRemaining获取当前帧的剩余时间
-//           while(count<chunks.length && deadline.timeRemaining()>1){
-//             // 空闲时间，且有任务
-//             await appendToSpark(chunks[count].file)
-//             count++
-//             if(count<chunks.length){
-//               this.hashProgress = Number(
-//                 ((100*count)/chunks.length).toFixed(2)
-//               )
-//             }else{
-//               this.hashProgress = 100
-//               resolve(spark.end())
-//             }
-//           }
-//           window.requestIdleCallback(workLoop)
-//         }
-//         // 浏览器一旦空闲，就会调用workLoop
-//         window.requestIdleCallback(workLoop)
+        const appendToSpark = file=>{
+          return new Promise(resolve=>{
+            const reader = new FileReader()
+            reader.readAsArrayBuffer(file)
+            reader.onload = e=>{
+              spark.append(e.target.result)
+              resolve()
+            }
+          })
+        }
+        const workLoop = async deadline=>{
+          // timeRemaining获取当前帧的剩余时间
+          while(count<chunks.length && deadline.timeRemaining()>1){
+            // 空闲时间，且有任务
+            await appendToSpark(chunks[count].file)
+            count++
+            if(count<chunks.length){
+              this.hashProgress = Number(
+                ((100*count)/chunks.length).toFixed(2)
+              )
+            }else{
+              this.hashProgress = 100
+              resolve(spark.end())
+            }
+          }
+          // 当前做完之后没有空闲时间了就启动下一次的任务
+          window.requestIdleCallback(workLoop)
+        }
+        // 浏览器一旦空闲，就会调用workLoop
+        window.requestIdleCallback(workLoop)
 
-//       })
-//     },
+      })
+    },
 //     async calculateHashSample(){
 
 //       // 布隆过滤器  判断一个数据存在与否
@@ -272,9 +273,9 @@ export default {
       
       this.chunks = this.createFileChunk(this.file)   // 文件切片
       const hash = await this.calculateHashWorker()   // 使用webworker计算hash
-    //   // const hash1 = await this.calculateHashIdle()
+      const hash1 = await this.calculateHashIdle()
       console.log('文件hash',hash)
-    //   // console.log('文件hash1',hash1)
+      console.log('文件hash1',hash1)
     //   const hash = await this.calculateHashSample()
     //   this.hash = hash
 
