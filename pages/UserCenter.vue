@@ -12,11 +12,11 @@
     <div>
       <el-button @click="uploadFile">上传</el-button>
     </div>
-    <!-- <div>
+    <div>
       <p>计算hash的进度</p>
       <el-progress :stroke-width='20' :text-inside="true" :percentage="hashProgress" ></el-progress>
       
-    </div> -->
+    </div>
 
     <div>
       <!-- chunk.progress 
@@ -47,7 +47,7 @@
 </template>
 <script>
 // import sparkMD5 from 'spark-md5'
-// const CHUNK_SIZE = 10*1024*1024
+const CHUNK_SIZE = 10*1024*1024
 export default {
   data(){
     return {
@@ -137,28 +137,29 @@ export default {
       // 先判定是不是gif （异步操作）
       return await this.isGif(file) || await this.isPng(file)
     },
-//     createFileChunk(file,size=CHUNK_SIZE){
-//       const chunks = [] 
-//       let cur = 0
-//       while(cur<this.file.size){
-//         chunks.push({index:cur, file:this.file.slice(cur,cur+size)})
-//         cur+=size
-//       }
-//       return chunks
-//     },
-//     async calculateHashWorker(){
-//       return new Promise(resolve=>{
-//         this.worker = new Worker('/hash.js')
-//         this.worker.postMessage({chunks:this.chunks})
-//         this.worker.onmessage = e=>{
-//           const {progress,hash} = e.data
-//           this.hashProgress = Number(progress.toFixed(2))
-//           if(hash){
-//             resolve(hash)
-//           }
-//         }
-//       })
-//     },
+    // 切片合并
+    createFileChunk(file,size=CHUNK_SIZE){
+      const chunks = [] 
+      let cur = 0
+      while(cur<this.file.size){
+        chunks.push({index:cur, file:this.file.slice(cur,cur+size)})
+        cur+=size
+      }
+      return chunks
+    },
+    calculateHashWorker(){
+      return new Promise(resolve=>{
+        this.worker = new Worker('/hash.js')  // 新开了个进程
+        this.worker.postMessage({chunks:this.chunks})  // 传入
+        this.worker.onmessage = e=>{  // 回传
+          const {progress,hash} = e.data
+          this.hashProgress = Number(progress.toFixed(2))
+          if(hash){
+            resolve(hash)
+          }
+        }
+      })
+    },
 
 //     // 60fps
 //     // 1秒渲染60次 渲染1次 1帧，大概16.6ms
@@ -245,23 +246,23 @@ export default {
 //     },
     async uploadFile(){
     // 校验文件格式
-      if(!await this.isImage(this.file)){
-        console.log('文件格式不对')
-      }else{
-        console.log('格式正确')
-      }
+      // if(!await this.isImage(this.file)){
+      //   console.log('文件格式不对')
+      // }else{
+      //   console.log('格式正确')
+      // }
     // 图片上传1.0
     // 不考虑断点续传以及文件类型校验的情况,只需要简单的post过去
     // 由于是二进制的数据需要放在form表单里面
-        const form = new FormData()
-        form.append('name','file')
-        form.append('file',this.file)
-        const ret = await this.$http.post('/uploadfile',form,{
-            onUploadProgress:progress=>{
-                this.uploadProgress = Number(((progress.loaded/progress.total)*100).toFixed(2))
-            }
-        })
-        console.log(ret)
+        // const form = new FormData()
+        // form.append('name','file')
+        // form.append('file',this.file)
+        // const ret = await this.$http.post('/uploadfile',form,{
+        //     onUploadProgress:progress=>{
+        //         this.uploadProgress = Number(((progress.loaded/progress.total)*100).toFixed(2))
+        //     }
+        // })
+        // console.log(ret)
     //   if(!this.file){
     //     return 
     //   }
@@ -269,10 +270,10 @@ export default {
 
 
       
-    //   const chunks = this.createFileChunk(this.file)
-    //   // const hash = await this.calculateHashWorker()
+      this.chunks = this.createFileChunk(this.file)   // 文件切片
+      const hash = await this.calculateHashWorker()   // 使用webworker计算hash
     //   // const hash1 = await this.calculateHashIdle()
-    //   // console.log('文件hash',hash)
+      console.log('文件hash',hash)
     //   // console.log('文件hash1',hash1)
     //   const hash = await this.calculateHashSample()
     //   this.hash = hash
