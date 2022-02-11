@@ -278,17 +278,17 @@ export default {
       const hash = await this.calculateHashSample()
       this.hash = hash
 
-    //   // 问一下后端，文件是否上传过，如果没有，是否有存在的切片
-    //   const {data:{uploaded, uploadedList}} = await this.$http.post('/checkfile',{
-    //     hash:this.hash,
-    //     ext:this.file.name.split('.').pop()
-    //   })
-    //   if(uploaded){
-    //     // 秒传
-    //     return this.$message.success('秒传成功')
-    //   }
-    //   // console.log('文件hash2',hash2)
-    //   // 两个hash配合
+      // 问一下后端，文件是否上传过，如果没有，是否有存在的切片
+      const {data:{uploaded, uploadedList}} = await this.$http.post('/checkfile',{
+        hash:this.hash,
+        ext:this.file.name.split('.').pop()
+      })
+      if(uploaded){
+        // 秒传
+        return this.$message.success('秒传成功')
+      }
+      // console.log('文件hash2',hash2)
+      // 两个hash配合
       // 抽样hash 不算全量
       // 布隆过滤器 损失一小部分的精度，换取效率
     
@@ -302,8 +302,7 @@ export default {
           index, // 当前的索引值
           chunk:chunk.file, // 文件
           // 设置进度条，已经上传的，设为100
-          // progress:uploadedList.includes(name) ?100:0
-          progress:0
+          progress:uploadedList.includes(name) ?100:0
         }
       })
       // await this.uploadChunks(uploadedList)
