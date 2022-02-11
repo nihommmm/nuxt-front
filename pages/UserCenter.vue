@@ -305,8 +305,8 @@ export default {
           progress:uploadedList.includes(name) ?100:0
         }
       })
-      // await this.uploadChunks(uploadedList)
-      await this.uploadChunks()
+      await this.uploadChunks(uploadedList)
+      // await this.uploadChunks()
 
     },
     async uploadChunks(uploadedList=[]){
