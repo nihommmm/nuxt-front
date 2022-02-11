@@ -1,8 +1,85 @@
 <template>
-<div>
-    <nuxt/>
-</div>
+
+    <el-container>
+      <!-- <div>
+        {{userinfo}}
+      </div> -->
+      <el-header>
+        <el-menu class="el-menu-demo" mode="horizontal">
+          <el-menu-item index="0">
+            <img class="logo" src="/logo.png" alt="">
+          </el-menu-item>
+
+        <el-menu-item index="1">
+          <nuxt-link to="/">首页</nuxt-link>
+        </el-menu-item>
+
+
+        <el-menu-item v-if="userinfo.id" index="3" class="pull-right">
+          <a @click="logout">退出</a>
+        </el-menu-item>
+        <el-menu-item v-if="userinfo.id" index="4" class="pull-right">
+          <!-- <UserDisplay :user="userinfo">
+
+          </UserDisplay> -->
+          {{userinfo.nickname}}
+        </el-menu-item>
+
+        <el-menu-item v-if="userinfo.id" index="3" class="pull-right">
+          <nuxt-link to="/editor/BaseNew">
+            <el-button type='primary'>写文章</el-button>
+          </nuxt-link>
+        </el-menu-item>
+
+        <el-menu-item v-if="!userinfo.id" index="2" class="pull-right">
+          <nuxt-link to="/BaseRegister">注册</nuxt-link>
+        </el-menu-item>
+
+          <el-menu-item v-if="!userinfo.id" index="3" class="pull-right">
+          <nuxt-link to="/BaseLogin">登录</nuxt-link>
+        </el-menu-item>
+        </el-menu>
+      </el-header>
+
+      <el-main>
+
+        <nuxt />
+      </el-main>
+      <el-footer>
+        底部信息
+      </el-footer>
+    </el-container>
+
+    
+
 </template>
+<script> 
+// import UserDisplay  from '~/components/UserDisplay.vue'
+export default {
+  // components:{UserDisplay},
+  computed:{
+    userinfo(){
+      return this.$store.state.user
+    }
+  },
+  mounted(){
+    this.getUserInfo()
+  },
+  methods:{
+    logout(){
+      localStorage.removeItem('KKB_USER_TOKEN')
+      this.$store.commit('user/LOGOUT')
+    },
+    getUserInfo(){
+      // 获取用户个人信息，如果有登录状态
+      const token = localStorage.getItem('KKB_USER_TOKEN')
+      if(token){
+        this.$store.dispatch('user/detail')
+      }
+    }
+  }
+}
+</script>
 <style>
 html {
   font-family: 'Source Sans Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI',
@@ -24,5 +101,21 @@ html {
 *:after {
   box-sizing: border-box;
   margin: 0;
+}
+.logo{
+  height:37px;
+}
+a{
+  text-decoration: none;
+}
+.kkb-container{
+  width:980px;
+  height:80vh;
+  margin:0 auto;
+  background: #fff;
+  padding:20px;
+}
+.el-menu--horizontal>.el-menu-item.is-active{
+  border:none;
 }
 </style>
